@@ -1,14 +1,13 @@
-from fastapi import FastAPI
-from backend.app.products import router as products_router
-from backend.app.orders import router as orders_router
-from backend.app.admin import router as admin_router
+from aiogram import Bot, Dispatcher, executor, types
 
-app = FastAPI()
+BOT_TOKEN = "7979500134:AAE3yoPTqCAmN3VVpR_Cf305N_no8_DoM0c"  # Bu yerga tokeningizni qo'ying
 
-app.include_router(products_router, prefix="/products", tags=["products"])
-app.include_router(orders_router, prefix="/orders", tags=["orders"])
-app.include_router(admin_router, prefix="/admin", tags=["admin"])
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot)
 
-@app.get("/")
-async def root():
-    return {"message": "Biyoti Uz mini app API ishlamoqda!"}
+@dp.message_handler(commands=["start"])
+async def start_handler(message: types.Message):
+    await message.answer("Salom! Bot ishga tushdi!")
+
+if __name__ == "__main__":
+    executor.start_polling(dp, skip_updates=True)
