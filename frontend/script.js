@@ -1,110 +1,79 @@
+const productsSection = document.getElementById("products-section");
+const searchInput = document.getElementById("search-input");
+const cartItems = document.getElementById("cart-items");
+const checkoutBtn = document.getElementById("checkout-btn");
+const orderSection = document.getElementById("order-section");
+const orderForm = document.getElementById("order-form");
+
 let products = [];
 let cart = [];
 
-// Mahsulotlarni backenddan yuklash
-async function loadProducts() {
-  const res = await fetch('http://localhost:8000/products');
-  products = await res.json();
-  displayProducts(products);
+// Backend URL manzilingizni shu yerga yozing
+const backendUrl = "http://localhost:8000";  // Render.com’da joylashgan backend manzilini yozasiz
+
+// Mahsulotlarni backenddan olish
+async function fetchProducts() {
+    try {
+        const res = await fetch(`${backendUrl}/products`);
+        products = await res.json();
+        displayProducts(products);
+    } catch (error) {
+        productsSection.innerHTML = "<p>Mahsulotlarni yuklashda xatolik yuz berdi.</p>";
+        console.error(error);
+    }
 }
 
-// Mahsulotlarni ekranga chiqarish
+// Mahsulotlarni sahifaga chiqarish
 function displayProducts(items) {
-  const container = document.getElementById('products-list');
-  container.innerHTML = '';
-  items.forEach(product => {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.innerHTML = `
-      <img src="${product.images[0]}" alt="${product.name}">
-      <h3>${product.name}</h3>
-      <p>Narxi: ${product.price} so'm</p>
-      <button onclick="addToCart('${product.id}')">Savatchaga qo'shish</button>
-    `;
-    container.appendChild(card);
-  });
+    productsSection.innerHTML = "";
+    if (items.length === 0) {
+        productsSection.innerHTML = "<p>Mahsulot topilmadi.</p>";
+        return;
+    }
+    items.forEach(product => {
+        const div = document.createElement("div");
+        div.className = "product-card";
+        div.innerHTML = `
+            <h3>${product.name}</h3>
+            <p>${product.description}</p>
+            <p>Narxi: ${product.price} so'm</p>
+            <button onclick="addToCart(${product.id})">Savatchaga qo'shish</button>
+        `;
+        productsSection.appendChild(div);
+    });
 }
 
-// Qidiruv funksiyasi
-function searchProducts() {
-  const query = document.getElementById('search-input').value.toLowerCase();
-  const filtered = products.filter(p => p.name.toLowerCase().includes(query));
-  displayProducts(filtered);
+// Qidiruv
+searchInput.addEventListener("input", () => {
+    const filtered = products.filter(p =>
+        p.name.toLowerCase().includes(searchInput.value.toLowerCase())
+    );
+    displayProducts(filtered);
+});
+
+// Savatchaga mahsulot qo‘shish
+function addToCart(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const existing = cart.find(item => item.id === id);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({...product, quantity: 1});
+    }
+    renderCart();
 }
 
-// Savatchaga qo'shish
-function addToCart(productId) {
-  const product = products.find(p => p.id === productId);
-  if (!product) return;
-  const cartItem = cart.find(item => item.id === productId);
-  if (cartItem) {
-    cartItem.quantity += 1;
-  } else {
-    cart.push({...product, quantity: 1});
-  }
-  updateCartUI();
-}
-
-// Savatchani ekranga chiqarish
-function updateCartUI() {
-  const cartList = document.getElementById('cart-items');
-  cartList.innerHTML = '';
-  cart.forEach(item => {
-    const li = document.createElement('li');
-    li.textContent = `${item.name} x${item.quantity}`;
-    cartList.appendChild(li);
-  });
-  document.getElementById('cart-count').textContent = cart.length;
-}
-
-// Buyurtma berish
-async function placeOrder() {
-  const name = document.getElementById('order-name').value.trim();
-  const phone = document.getElementById('order-phone').value.trim();
-  const address = document.getElementById('order-address').value.trim();
-
-  if (!name || !phone || !address) {
-    alert('Iltimos, barcha ma\'lumotlarni to\'ldiring');
-    return;
-  }
-
-  if (cart.length === 0) {
-    alert('Savatcha bo\'sh');
-    return;
-  }
-
-  const orderData = {
-    name,
-    phone,
-    address,
-    items: cart.map(item => ({
-      id: item.id,
-      name: item.name,
-      quantity: item.quantity
-    }))
-  };
-
-  const res = await fetch('http://localhost:8000/orders', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(orderData)
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
-    alert(`Buyurtma qabul qilindi. ID: ${data.order_id}`);
-    cart = [];
-    updateCartUI();
-    document.getElementById('order-form').reset();
-  } else {
-    alert('Buyurtma berishda xatolik yuz berdi');
-  }
-}
-
-// Eventlar qo'shish
-document.getElementById('search-input').addEventListener('input', searchProducts);
-document.getElementById('checkout-btn').addEventListener('click', placeOrder);
-
-// Sahifa yuklanganda mahsulotlarni yuklash
-window.onload = loadProducts;
+// Savatchani yangilash va ko‘rsatish
+function renderCart() {
+    cartItems.innerHTML = "";
+    cart.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.name} - ${item.quantity} dona`;
+        const removeBtn = document.createElement("button");
+        removeBtn.textContent = "O‘chirish";
+        removeBtn.onclick = () => removeFromCart(item.id);
+        li.appendChild(removeBtn);
+        cartItems.appendChild(li);
+    });
+    checkoutBtn
