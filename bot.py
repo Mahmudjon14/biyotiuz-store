@@ -1,17 +1,39 @@
+import logging
 import asyncio
 from aiogram import Bot, Dispatcher, types
+from fastapi import FastAPI
+import uvicorn
+import os
+from dotenv import load_dotenv
 
-API_TOKEN = "7979500134:AAE3yoPTqCAmN3VVpR_Cf305N_no8_DoM0c"
+load_dotenv()
 
-bot = Bot(token=API_TOKEN)
+# Logger
+logging.basicConfig(level=logging.INFO)
+
+# Telegram bot
+TOKEN = os.getenv("BOT_TOKEN")
+bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 
-@dp.message_handler(commands=['start', 'help'])
-async def send_welcome(message: types.Message):
-    await message.reply("Assalomu alaykum! Biyoti Uz botiga xush kelibsiz!")
+# FastAPI server
+app = FastAPI()
 
-async def main():
+@app.get("/")
+def root():
+    return {"message": "Biyoti Uz bot ishlayapti"}
+
+# Bot handler
+@dp.message_handler(commands=["start"])
+async def start_handler(message: types.Message):
+    await message.answer("Salom! Biyoti Uz botiga xush kelibsiz!")
+
+# Async background bot start
+async def start_bot():
     await dp.start_polling()
 
-if __name__ == '__main__':
-    asyncio.run(main())
+# Run both bot and FastAPI together
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_bot())  # Fon rejimida Telegram bot ishlaydi
+    uvicorn.run(app, host="0.0.0.0", port=10000)  # Render uchun HTTP port ochiladi
