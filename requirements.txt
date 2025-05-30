@@ -1,5 +1,5 @@
 fastapi
 uvicorn
-aiohttp
-requests
 python-dotenv
+requests
+aiogram==2.25.2
